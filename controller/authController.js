@@ -3,10 +3,12 @@ import { User } from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import httpStatusText from "../utils/httpStatusText.js";
 import JWT from "../utils/JWT.js";
+import deleteFile from "../utils/deleteFile.js";
 
 async function register(req, res, next) {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
   if (!name || !email || !password) {
+    deleteFile(req.file?.path);
     return res.status(400).json({
       status: httpStatusText.ERROR,
       message: "All fields are required",
@@ -14,21 +16,26 @@ async function register(req, res, next) {
   }
   const emailExists = await User.findOne({ email });
   if (password.length < 6) {
+    deleteFile(req.file?.path);
     return res.status(400).json({
       status: httpStatusText.FAIL,
       message: "Password must be 6 or more",
     });
   }
   if (emailExists) {
+    deleteFile(req.file?.path);
     return res
       .status(400)
       .json({ status: httpStatusText.ERROR, message: "Email already exists" });
   }
   const hashedPassword = await bcrypt.hash(password, 10);
+  const avatar = req.file ? req.file.filename : "/uploads/download (1).jpg";
   const newUser = await User.create({
     name,
     email,
     password: hashedPassword,
+    role,
+    avatar,
   });
   res.status(201).json({ status: httpStatusText.SUCCESS, data: { newUser } });
 }
@@ -57,11 +64,16 @@ async function login(req, res, next) {
       message: "password is not correct",
     });
   }
+  const token = JWT({
+    _id: emailExists._id,
+    email: emailExists.email,
+    role: emailExists.role,
+  });
   return res.status(200).json({
     status: httpStatusText.SUCCESS,
     data: {
       message: "login successfully",
-      token: JWT({ _id: emailExists.id, email: emailExists.email }),
+      token,
     },
   });
 }
