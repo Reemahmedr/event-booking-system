@@ -6,11 +6,17 @@ import router from "./routes/authRoute.js";
 import httpStatusText from "./utils/httpStatusText.js";
 import eventRouter from "./routes/eventsRoute.js";
 import bookingRouter from "./routes/bookingRoute.js";
+import helmet from "helmet";
+import { globalLimiter } from "./middleware/rate-limiter.js";
+import mongoSanitize from "express-mongo-sanitize";
 
 const app = express();
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
-app.use('/uploads',express.static("uploads"));
+app.use(mongoSanitize()); // Sanitize user-supplied data to prevent MongoDB Operator Injection
+app.use(globalLimiter);
+app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", router);
 app.use("/api/events", eventRouter);
