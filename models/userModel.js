@@ -17,9 +17,16 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
       trim: true,
       minlength: 6,
+      required: function () {
+        return !this.googleId;
+      },
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     role: {
       type: String,
@@ -30,10 +37,21 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "/uploads/download (1).jpg",
     },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+
+    resetPasswordExpire: {
+      type: Date,
+      default: null,
+    },
   },
   {
     versionKey: false,
   },
 );
+
+userSchema.index({ email: 1 });
 
 export const User = mongoose.model("User", userSchema);

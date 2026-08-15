@@ -3,12 +3,26 @@ import jwt from "jsonwebtoken";
 
 async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res
-      .status(401)
-      .json({ status: httpStatusText.FAIL, msg: "unauthorized" });
+  // if (!authHeader) {
+  //   return res
+  //     .status(401)
+  //     .json({ status: httpStatusText.FAIL, msg: "unauthorized" });
+  // }
+  // const token = authHeader.split(" ")[1];
+  let token;
+
+  if (authHeader) {
+    token = authHeader.split(" ")[1];
+  } else if (req.cookies.token) {
+    token = req.cookies.token;
   }
-  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({
+      status: httpStatusText.FAIL,
+      msg: "unauthorized",
+    });
+  }
 
   try {
     const decode = jwt.verify(token, process.env.JWT_SECERT);
@@ -19,4 +33,4 @@ async function verifyToken(req, res, next) {
   }
 }
 
-export default verifyToken
+export default verifyToken;
