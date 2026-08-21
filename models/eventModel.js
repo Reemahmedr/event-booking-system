@@ -32,6 +32,11 @@ const eventSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "category",
+      required: true,
+    },
   },
   {
     versionKey: false,

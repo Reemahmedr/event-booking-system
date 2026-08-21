@@ -1,4 +1,5 @@
 import asyncWrapper from "../middleware/asyncWrapper.js";
+import category from "../models/categoryModel.js";
 import { Event } from "../models/eventModel.js";
 import httpStatusText from "../utils/httpStatusText.js";
 import { validationResult } from "express-validator";
@@ -7,7 +8,10 @@ async function getAllEvents(req, res, next) {
   const limit = req.query.limit || 10;
   const page = req.query.page || 1;
   const skip = (page - 1) * limit;
-  const events = await Event.find().limit(limit).skip(skip);
+  const events = await Event.find()
+    .limit(limit)
+    .skip(skip)
+    .populate("category");
   res.status(200).json({ status: httpStatusText.SUCCESS, data: { events } });
 }
 
@@ -18,16 +22,24 @@ async function createEvent(req, res, next) {
       .status(400)
       .json({ status: httpStatusText.ERROR, message: error });
   }
+  const categoryExists = await category.findById(req.body.category);
+  if (!categoryExists) {
+    return res.status(404).json({
+      status: httpStatusText.FAIL,
+      message: "Category is not found",
+    });
+  }
   const event = await Event.create({ ...req.body });
+  await event.populate("category");
   res.status(201).json({ status: httpStatusText.SUCCESS, data: { event } });
 }
 
 async function getSingleEvent(req, res, next) {
-  const event = await Event.findById(req.params.id);
+  const event = await Event.findById(req.params.id).populate("category");
   if (!event) {
     return res
-      .status(400)
-      .json({ status: httpStatusText.FAIL, message: "event is not found" });
+      .status(404)
+      .json({ status: httpStatusText.FAIL, message: "Event is not found" });
   }
   res.status(200).json({ status: httpStatusText.SUCCESS, data: { event } });
 }
@@ -39,13 +51,24 @@ async function updateEvent(req, res, next) {
       message: "sorry no new content to update",
     });
   }
+
+  if (req.body.category) {
+    const categoryExists = await category.findById(req.body.category);
+
+    if (!categoryExists) {
+      return res.status(404).json({
+        status: httpStatusText.FAIL,
+        message: "Category is not found",
+      });
+    }
+  }
   const newEvent = await Event.findByIdAndUpdate(
     req.params.id,
     {
       $set: { ...req.body },
     },
     { new: true },
-  );
+  ).populate("category");
 
   if (!newEvent) {
     return res.status(404).json({

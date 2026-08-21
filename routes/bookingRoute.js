@@ -17,7 +17,7 @@ router.post(
   bookingController.bookEvent,
 );
 router.get(
-  "/:id",
+  "/",
   verifyToken,
   allowedTo(userRoles.USER),
   bookingController.getMyBooking,

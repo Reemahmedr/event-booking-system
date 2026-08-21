@@ -9,6 +9,7 @@ const createEventSchema = z.object({
   availableSeats: z
     .number()
     .min(0, { message: "Available seats must be a positive number" }),
+  category: z.string(),
 });
 
 const updateEventSchema = createEventSchema.partial();

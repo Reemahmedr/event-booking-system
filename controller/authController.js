@@ -25,9 +25,19 @@ async function register(req, res, next) {
     role,
     avatar,
   });
-  console.log(req.body);
 
-  res.status(201).json({ status: httpStatusText.SUCCESS, data: { newUser } });
+  res.status(201).json({
+    status: httpStatusText.SUCCESS,
+    data: {
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        avatar: newUser.avatar,
+      },
+    },
+  });
 }
 
 async function login(req, res, next) {
