@@ -23,6 +23,14 @@ async function addReview(req, res, next) {
       message: "To rate an event you must book it",
     });
   }
+
+  const review = await Review.findOne({ user: userId, event: eventId });
+  if (review) {
+    return res.status(409).json({
+      status: httpStatusText.FAIL,
+      message: "You have already reviewed this event",
+    });
+  }
   const createReview = await Review.create({
     user: userId,
     event: eventId,
@@ -62,7 +70,6 @@ async function getMyReviews(req, res, next) {
 async function updateReview(req, res, next) {
   const userId = req.user._id;
   const reviewId = req.params.id;
-  const { rating, comment } = req.body;
   if (Object.keys(req.body).length === 0) {
     return res.status(400).json({
       status: httpStatusText.FAIL,
@@ -80,7 +87,7 @@ async function updateReview(req, res, next) {
       _id: reviewId,
       user: userId,
     },
-    { $set: { rating, comment } },
+    { $set: req.body },
     { new: true },
   );
   if (!userReview) {
