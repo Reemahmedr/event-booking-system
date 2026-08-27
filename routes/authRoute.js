@@ -6,7 +6,6 @@ import authSchema from "../schema/auth.schema.js";
 import { loginLimiter, registerLimiter } from "../middleware/rate-limiter.js";
 import passport from "../config/passport.js";
 import JWT from "../utils/JWT.js";
-import verifyToken from "../middleware/verifyToken.js";
 
 const router = express.Router();
 
@@ -19,8 +18,8 @@ router.post(
 );
 router.post(
   "/login",
-  validate(authSchema.loginSchema),
   loginLimiter,
+  validate(authSchema.loginSchema),
   authController.login,
 );
 router.post("/forget-password", authController.forgetPassword);
@@ -42,11 +41,6 @@ router.get(
       email: req.user.email,
       role: req.user.role,
     });
-    // res.json({
-    //   message: "Google authentication successful",
-    //   user: req.user,
-    //   token,
-    // }); store in cookie "secured"
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", //http so false when deployment it should be true as it will be https
@@ -56,7 +50,5 @@ router.get(
     res.redirect(process.env.FRONTEND_URL);
   },
 );
-
-router.get("/me", verifyToken, authController.getCurrentUser);
 
 export default router;

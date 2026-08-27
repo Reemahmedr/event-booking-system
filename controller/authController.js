@@ -8,7 +8,7 @@ import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 
 async function register(req, res, next) {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
   const emailExists = await User.findOne({ email });
   if (emailExists) {
     deleteFile(req.file?.path);
@@ -22,7 +22,6 @@ async function register(req, res, next) {
     name,
     email,
     password: hashedPassword,
-    role,
     avatar,
   });
 
@@ -54,6 +53,12 @@ async function login(req, res, next) {
     return res.status(401).json({
       status: httpStatusText.FAIL,
       message: "Invalid email or password",
+    });
+  }
+  if (!emailExists.password) {
+    return res.status(401).json({
+      status: httpStatusText.FAIL,
+      message: "Please login using Google",
     });
   }
 
@@ -131,7 +136,9 @@ async function resetPassword(req, res, next) {
     });
   }
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  const user = await User.findOne({ resetPasswordToken: hashedToken });
+  const user = await User.findOne({ resetPasswordToken: hashedToken }).select(
+    "+resetPasswordToken +resetPasswordExpire",
+  );
   if (!user) {
     return res.status(404).json({
       status: httpStatusText.FAIL,
@@ -153,19 +160,10 @@ async function resetPassword(req, res, next) {
     message: "Password changed successfully",
   });
 }
-async function getCurrentUser(req, res) {
-  const user = await User.findById(req.user.id).select("-password");
-
-  return res.status(200).json({
-    status: httpStatusText.SUCCESS,
-    data: user,
-  });
-}
 
 export default {
   register: asyncWrapper(register),
   login: asyncWrapper(login),
   forgetPassword: asyncWrapper(forgetPassword),
   resetPassword: asyncWrapper(resetPassword),
-  getCurrentUser: asyncWrapper(getCurrentUser),
 };

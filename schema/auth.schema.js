@@ -1,5 +1,4 @@
 import * as z from "zod";
-import userRoles from "../utils/userRoles.js";
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: "Name is required" }).trim(),
@@ -15,8 +14,6 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, { message: "Password must contain an uppercase letter" })
     .regex(/[a-z]/, { message: "Password must contain a lowercase letter" })
     .regex(/[0-9]/, { message: "Password must contain a number" }),
-
-  role: z.enum([userRoles.ADMIN, userRoles.USER]).optional(),
 });
 
 const loginSchema = z.object({
