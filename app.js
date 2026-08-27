@@ -15,6 +15,7 @@ import categoryRouter from "./routes/categoryRoute.js";
 import saveForLaterRouter from "./routes/saveForLaterRoute.js";
 import userProfileRouter from "./routes/profileRoute.js";
 import reviewRouter from "./routes/reviewRoute.js";
+import notificationRouter from "./routes/notificationRoute.js";
 
 const app = express();
 app.use(helmet());
@@ -33,6 +34,7 @@ app.use("/api/category", categoryRouter);
 app.use("/api/saved-events", saveForLaterRouter);
 app.use("/api/users", userProfileRouter);
 app.use("/api/review", reviewRouter);
+app.use("/api/notification", notificationRouter);
 
 app.use((err, req, res, next) => {
   res.status(500).json({
