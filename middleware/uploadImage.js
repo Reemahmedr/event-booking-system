@@ -16,7 +16,7 @@ const fileFilter = function (req, file, cb) {
   if (imageType === "image") {
     return cb(null, true);
   } else {
-    return cb(null, false);
+    return cb(new Error("Only image files are allowed"));
   }
 };
 

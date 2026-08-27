@@ -1,19 +1,13 @@
 import httpStatusText from "../utils/httpStatusText.js";
 import jwt from "jsonwebtoken";
 
-async function verifyToken(req, res, next) {
+function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
-  // if (!authHeader) {
-  //   return res
-  //     .status(401)
-  //     .json({ status: httpStatusText.FAIL, msg: "unauthorized" });
-  // }
-  // const token = authHeader.split(" ")[1];
   let token;
 
-  if (authHeader) {
+  if (authHeader?.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
-  } else if (req.cookies.token) {
+  } else if (req.cookies?.token) {
     token = req.cookies.token;
   }
 
@@ -29,7 +23,7 @@ async function verifyToken(req, res, next) {
     req.user = decode;
     next();
   } catch (error) {
-    return res.status(400).json({ status: httpStatusText.FAIL, msg: error });
+    return res.status(401).json({ status: httpStatusText.FAIL, msg: error });
   }
 }
 
