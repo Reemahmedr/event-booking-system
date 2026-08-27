@@ -2,7 +2,7 @@ import asyncWrapper from "../middleware/asyncWrapper.js";
 import category from "../models/categoryModel.js";
 import { Event } from "../models/eventModel.js";
 import httpStatusText from "../utils/httpStatusText.js";
-import { validationResult } from "express-validator";
+import { Booking } from "../models/bookingModel.js";
 
 async function getAllEvents(req, res, next) {
   const limit = req.query.limit || 10;
@@ -16,12 +16,6 @@ async function getAllEvents(req, res, next) {
 }
 
 async function createEvent(req, res, next) {
-  const error = validationResult(req);
-  if (!error.isEmpty()) {
-    return res
-      .status(400)
-      .json({ status: httpStatusText.ERROR, message: error });
-  }
   const categoryExists = await category.findById(req.body.category);
   if (!categoryExists) {
     return res.status(404).json({
@@ -76,6 +70,16 @@ async function updateEvent(req, res, next) {
       message: "Event is not found",
     });
   }
+  const bookings = await Booking.find({
+    event: req.params.id,
+  });
+  for (const booking of bookings) {
+    await Notification.create({
+      user: booking.user,
+      type: "event_updated",
+      message: `The event "${newEvent.title}" has been updated.`,
+    });
+  }
   res.status(200).json({
     status: httpStatusText.SUCCESS,
     data: { message: "your event updated successfully", newEvent },
@@ -83,12 +87,25 @@ async function updateEvent(req, res, next) {
 }
 
 async function deleteEvent(req, res, next) {
-  const event = await Event.findByIdAndDelete(req.params.id);
+  const event = await Event.findById(req.params.id);
   if (!event) {
     return res
       .status(404)
       .json({ status: httpStatusText.FAIL, message: "Event not found" });
   }
+  const bookings = await Booking.find({
+    event: event._id,
+  });
+
+  for (const booking of bookings) {
+    await Notification.create({
+      user: booking.user,
+      type: "event_cancelled",
+      message: `The event "${event.title}" has been cancelled.`,
+    });
+  }
+
+  await Event.findByIdAndDelete(event._id);
   res.status(200).json({
     status: httpStatusText.SUCCESS,
     message: `Event of title ${event.title} is deleted successfully`,

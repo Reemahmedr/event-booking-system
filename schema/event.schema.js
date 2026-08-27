@@ -5,8 +5,10 @@ const createEventSchema = z.object({
   description: z.string().trim().min(2, { message: "Description is required" }),
   location: z.string().trim().min(2, { message: "Location is required" }),
   date: z.coerce.date({ message: "Invalid date format" }),
-  price: z.number().min(0, { message: "Price must be a positive number" }),
-  availableSeats: z
+  price: z.coerce
+    .number()
+    .min(0, { message: "Price must be a positive number" }),
+  availableSeats: z.coerce
     .number()
     .min(0, { message: "Available seats must be a positive number" }),
   category: z.string(),
