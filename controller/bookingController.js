@@ -2,6 +2,7 @@ import { Event } from "../models/eventModel.js";
 import httpStatusText from "../utils/httpStatusText.js";
 import { Booking } from "../models/bookingModel.js";
 import asyncWrapper from "../middleware/asyncWrapper.js";
+import Notification from "../models/notificationModel.js";
 
 async function bookEvent(req, res, next) {
   const event = await Event.findById(req.params.id);
@@ -12,20 +13,8 @@ async function bookEvent(req, res, next) {
       message: "Event not found",
     });
   }
-
-  const bookings = await Booking.find({
-    event: event._id,
-  });
-
-  let totalBookedSeats = 0;
-
-  for (const booking of bookings) {
-    totalBookedSeats += booking.numberOfSeats;
-  }
-
   const requestedSeats = req.body.numberOfSeats;
-
-  if (totalBookedSeats + requestedSeats > event.capacity) {
+  if (requestedSeats > event.availableSeats) {
     return res.status(400).json({
       status: httpStatusText.FAIL,
       message: "Sorry, Event is fully booked",
@@ -33,7 +22,7 @@ async function bookEvent(req, res, next) {
   }
 
   const alreadyBooked = await Booking.findOne({
-    user: req.body.user,
+    user: req.user._id,
     event: event._id,
   });
 
@@ -57,6 +46,11 @@ async function bookEvent(req, res, next) {
     { new: true },
   );
 
+  await Notification.create({
+    user: req.user._id,
+    type: "booking",
+    message: `Your booking for "${event.title}" has been confirmed successfully.`,
+  });
   return res.status(201).json({
     status: httpStatusText.SUCCESS,
     data: {
@@ -70,9 +64,11 @@ async function getMyBooking(req, res, next) {
     "event",
   );
   if (myBooking.length === 0) {
-    return res
-      .status(404)
-      .json({ status: httpStatusText.FAIL, message: "no booking found" });
+    return res.status(200).json({
+      status: httpStatusText.SUCCESS,
+      message: "no booking found",
+      data: [],
+    });
   }
 
   res.status(200).json({ status: httpStatusText.SUCCESS, data: { myBooking } });
@@ -89,6 +85,21 @@ async function cancelBooking(req, res, next) {
       message: "Booking not found or not yours",
     });
   }
+  await Event.findByIdAndUpdate(
+    cancelBooking.event._id,
+    {
+      $inc: {
+        availableSeats: cancelBooking.numberOfSeats,
+      },
+    },
+    { new: true },
+  );
+
+  await Notification.create({
+    user: req.user._id,
+    type: "booking_cancelled",
+    message: `Your booking for "${cancelBooking.event.title}" has been cancelled successfully.`,
+  });
   res.status(200).json({
     status: httpStatusText.SUCCESS,
     data: { message: "Booking deleted successfully", cancelBooking },
@@ -106,7 +117,7 @@ async function updateBooking(req, res, next) {
       .json({ status: httpStatusText.ERROR, message: "Booking not found" });
   }
   const eventId = req.body.event || booking.event;
-  const newSeats = req.body.numberOfSeats || booking.numberOfSeats;
+  const newSeats = req.body.numberOfSeats ?? booking.numberOfSeats;
   const newEvent = await Event.findById(eventId);
 
   if (!newEvent) {
@@ -160,6 +171,11 @@ async function updateBooking(req, res, next) {
   booking.numberOfSeats = newSeats;
 
   await booking.save();
+  await Notification.create({
+    user: req.user._id,
+    type: "booking_updated",
+    message: `Your booking for "${newEvent.title}" has been updated successfully.`,
+  });
   res.status(200).json({ status: httpStatusText.SUCCESS, data: { booking } });
 }
 
