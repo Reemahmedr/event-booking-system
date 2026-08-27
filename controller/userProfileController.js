@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import { Booking } from "../models/bookingModel.js";
 import saveForLater from "../models/saveForLaterModel.js";
 import mongoose from "mongoose";
+import Notification from "../models/notificationModel.js";
 
 async function getProfile(req, res, next) {
   const userId = req.user._id;
@@ -128,9 +129,25 @@ async function deleteAccount(req, res, next) {
   try {
     session.startTransaction();
 
+    const userBookings = await Booking.find({
+      user: userId,
+    }).session(session);
+    for (const booking of userBookings) {
+      await Event.findByIdAndUpdate(
+        booking.event,
+        {
+          $inc: {
+            availableSeats: booking.numberOfSeats,
+          },
+        },
+        { session },
+      );
+    }
     await Booking.deleteMany({ user: userId }, { session });
 
     await saveForLater.deleteMany({ user: userId }, { session });
+
+    await Notification.deleteMany({ user: userId }, { session });
 
     const deletedUser = await User.findByIdAndDelete(userId, { session });
 
