@@ -20,12 +20,12 @@ async function getAllCategories(req, res, next) {
 
 async function addCategory(req, res, next) {
   const { name, description } = req.body;
-  if (!name || !description) {
-    return res.status(400).json({
-      status: httpStatusText.FAIL,
-      message: "All fields are required",
-    });
-  }
+  // if (!name || !description) {
+  //   return res.status(400).json({
+  //     status: httpStatusText.FAIL,
+  //     message: "All fields are required",
+  //   });
+  // }
   const createCategory = await category.create({
     name,
     description,
@@ -73,14 +73,10 @@ async function deleteCategory(req, res, next) {
 }
 
 async function updateCategory(req, res, next) {
-  const { name, description } = req.body;
   const oneCategory = await category.findByIdAndUpdate(
     req.params.id,
     {
-      $set: {
-        name,
-        description,
-      },
+      $set: req.body,
     },
     {
       new: true,
